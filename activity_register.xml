@@ -7,7 +7,7 @@
     tools:context="com.example.lioncode.sec.Register">
 
     <EditText
-        android:id="@+id/emailEditText"
+        android:id="@+id/regEmailEditText"
         android:layout_width="216dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="48dp"
