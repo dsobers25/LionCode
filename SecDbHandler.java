@@ -6,6 +6,12 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.TimeZone;
+
 public class SecDbHandler extends SQLiteOpenHelper{
 
     private static final int DATABASE_VERSION = 1;
@@ -50,20 +56,29 @@ public class SecDbHandler extends SQLiteOpenHelper{
     }//end of addHandler
 
 
-    public Student findStudent(String password) {
-        String query = "Select * FROM " + TABLE_STUDENTS + " WHERE " + COLUMN_PASSWORD + " = '" + password + "'";
-        SQLiteDatabase db = this.getWritableDatabase();
+    public Student findStudent(String email) {
+        String query = "Select * FROM " + TABLE_STUDENTS + " WHERE " + COLUMN_EMAIL + " = '" + email + "'";
+        //SQLiteDatabase db = this.getWritableDatabase();
+        SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery(query, null);
         Student student = new Student();
         if (cursor.moveToFirst()) {
             cursor.moveToFirst();
-            student.setEmail(cursor.getString(0));
+            //student.setEmail(cursor.getString(0));
+            String luemail = cursor.getString(0);
+            String password = cursor.getString(1);
+            String clockin = cursor.getString(2);
+            String clockout = cursor.getString(3);
+            student.setEmail(luemail);
+            student.setPassword(password);
+            student.setClockin(clockin);
+            student.setClockout(clockout);
             cursor.close();
         } else {
             student = null;
         }
         db.close();
-        //return password and email
+
         return student;
     }
 
@@ -87,31 +102,43 @@ public class SecDbHandler extends SQLiteOpenHelper{
     }//end of load
 
     public boolean updateTime(String email, String password, String clockin, String clockout) {
+        Calendar cal = Calendar.getInstance();
+        Date date=cal.getTime();
+        DateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd 'at' HH:mm:ss z");
+        dateFormat.setTimeZone(TimeZone.getTimeZone("America/Chicago"));
+        String formattedDate = dateFormat.format(date);
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues cv = new ContentValues();
         cv.put(COLUMN_EMAIL, email);
         cv.put(COLUMN_PASSWORD, password);
-        cv.put(COLUMN_CLOCKIN, clockin);
-        if(clockout != ""){
-            clockout = "";
-            cv.put(COLUMN_CLOCKOUT, clockout);
-            return db.update(TABLE_STUDENTS, cv, COLUMN_CLOCKIN + "=" + clockin, null) > 0;
+        if(clockin.equals("N/A") || !clockout.equals("N/A")) {
+            cv.put(COLUMN_CLOCKIN, formattedDate);
+            cv.put(COLUMN_CLOCKOUT, "N/A");
         }
-        cv.put(COLUMN_CLOCKOUT, clockout);
-        return db.update(TABLE_STUDENTS, cv, COLUMN_CLOCKOUT + "=" + clockout, null) > 0;
+        else{
+            cv.put(COLUMN_CLOCKIN, clockin);
+            cv.put(COLUMN_CLOCKOUT, formattedDate);
+        }
+        return db.update(TABLE_STUDENTS, cv, COLUMN_EMAIL + "=?", new String [] {email}) > 0;
+
+
     }
 
-    public String checkStudent(Student student) {
-        String id = "";
+    public Boolean checkStudent(String email, String password) {
+        String[] col = {COLUMN_EMAIL};
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT COLUMN_EMAIL FROM TABLE_STUDENTS WHERE email=? " +
-                "AND password=?",new String[]{student.getEmail(),student.getPassword()});
-        if(cursor.getCount()>0) {
-            cursor.moveToFirst();
-            id=cursor.getString(0 );
-            cursor.close();
+        String selection = COLUMN_EMAIL + " = ?" + " AND " + COLUMN_PASSWORD + " = ?";
+        String[] selectionArgs = {email, password};
+        Cursor cursor = db.query(TABLE_STUDENTS, col, selection, selectionArgs, null, null, null);
+        int cursorCount = cursor.getCount();
+
+        cursor.close();
+        db.close();
+        if (cursorCount > 0) {
+            return true;
         }
-        return id;
+
+        return false;
     }
 
     public void deleteUser(Student student) {
@@ -121,4 +148,6 @@ public class SecDbHandler extends SQLiteOpenHelper{
                 new String[]{String.valueOf(student.getEmail())});
         db.close();
     }
+
+
 }
