@@ -31,17 +31,22 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 String luEmail = email.getText().toString() ;
                 String pass = password.getText().toString();
-                Student stu = new Student(luEmail, pass, null, null);
                 Boolean chkempass = dh.checkStudent(luEmail, pass);
                 if(!chkempass){
                     Toast.makeText(getApplicationContext(), "Wrong email or password",Toast.LENGTH_SHORT).show();
                 }
                 else{
                     Toast.makeText(getApplicationContext(), "Successfully Login",Toast.LENGTH_SHORT).show();
-                    //if(luEmail.equals("admin")){
-                        //Intent a = new Intent(MainActivity.this, Admin.class);
-                      // startActivity(a);
-                    //}
+                    if(luEmail.equals("admin")){
+                        Intent a = new Intent(MainActivity.this, Admin.class);
+                       startActivity(a);
+                    }
+                    else{
+                        Intent time = new Intent(MainActivity.this, TimeStamp.class);
+                        time.putExtra("EML", luEmail);
+                        time.putExtra("PWD", pass);
+                        startActivity(time);
+                    }
                 }
             }
             });
